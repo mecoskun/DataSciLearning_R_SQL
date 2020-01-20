@@ -1,0 +1,109 @@
+#Difference between for loop and lapply/sapply
+#consider the following list:
+mylist <- list(number = 3, myarray = c("unit1", "unit2", "unit3"), mylogic = TRUE)
+
+#following for loop will visit each element in mylist and print its class
+for(element in mylist){
+  print(class(element))
+}
+
+"numeric"
+"character"
+"logical"
+
+#instead of using for loop I can do the same with lapply function, which applies class function to each element in mylist
+lapply(mylist, class)
+
+#another example: applying nchar function to get number of chars of each string in an array
+cities <- c("New York", "Paris", "London", "Tokyo")
+lapply(cities, nchar)
+#output:
+[1] 8
+[2] 5
+[3] 6
+[4] 5
+
+#to turn this list format output into a vector we use unlist command:
+unlist(lapply(cities, nchar))
+#output"
+8 5 6 5
+
+
+#if a function we use requires additional arguments we can define them in lapply
+multiply <- function(x, factor){
+  x * factor
+}
+
+mynumbers <- c( 1, 2, 3)
+result <- lapply(mynumbers, multiply, factor=2)
+unlist(result)
+2 4 6
+  
+
+Exercise 1:
+Have a look at the strsplit() calls, that splits the strings in pioneers on the : sign. 
+The result, split_math is a list of 4 character vectors: the first vector element represents the name, 
+the second element the birth year.
+Use lapply() to convert the character vectors in split_math to lowercase letters: 
+apply tolower() on each of the elements in split_math. Assign the result, which is a list, to a new variable split_low.
+Finally, inspect the contents of split_low with str().
+
+# The vector pioneers has already been created for you
+pioneers <- c("GAUSS:1777", "BAYES:1702", "PASCAL:1623", "PEARSON:1857")
+
+# Split names from birth year
+split_math <- strsplit(pioneers, split = ":")
+#output:
+[[1]]
+[1] "GAUSS" "1777" 
+
+[[2]]
+[1] "BAYES" "1702" 
+
+[[3]]
+[1] "PASCAL" "1623"  
+
+[[4]]
+[1] "PEARSON" "1857"
+
+# Convert to lowercase strings: split_low
+split_low <- lapply(split_math, tolower)
+
+# Take a look at the structure of split_low
+str(split_low)
+List of 4
+ $ : chr [1:2] "gauss" "1777"
+ $ : chr [1:2] "bayes" "1702"
+ $ : chr [1:2] "pascal" "1623"
+ $ : chr [1:2] "pearson" "1857"
+
+#Exercise 2:
+#Use lapply() twice to call select_el() over all elements in split_low: 
+#once with the index equal to 1 and a second time with the index equal to 2. 
+#Assign the result to names and years, respectively.\
+# Definition of split_low
+pioneers <- c("GAUSS:1777", "BAYES:1702", "PASCAL:1623", "PEARSON:1857")
+split <- strsplit(pioneers, split = ":")
+split_low <- lapply(split, tolower)
+
+# Generic select function
+select_el <- function(x, index) {
+  x[index]
+}
+
+# Use lapply() twice on split_low: names and years
+names <- lapply(split_low, select_el, index=1)
+years <- lapply(split_low, select_el, index=2)
+
+names
+[[1]]
+[1] "gauss"
+
+[[2]]
+[1] "bayes"
+
+[[3]]
+[1] "pascal"
+
+[[4]]
+[1] "pearson"
