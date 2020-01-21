@@ -1,0 +1,98 @@
+Sequence of metacharacters
+- Pattern existence
+- Pattern replacement
+- Pattern extraction
+CHECK: ?regex in R
+
+grep(), grepl(), sub(), gsub()
+
+#grepl can check patterns in a sequence
+animals <- c("cat", "mouse")
+grepl(pattern = "a", x = animals)
+TRUE FALSE
+
+#check words that start with a character
+grepl(pattern = "^m", x=animals)
+FALSE TRUE
+#similarly "m$" pattern checks words that end with m
+
+#grep function returns indices of elements in a vector that follows a pattern
+grep(pattern = "a", x = animals)
+output: 1
+grep(pattern = "e$", x = animals)
+output: 2
+
+#grep function is basically grepl used with which function
+which(grepl(pattern = "a", x = animals))
+1
+
+#sub and gsub functions are used to replace patterns with others in objects
+animals <- c("cat", "mouse", "impala")
+sub(pattern = "a", replacement = "o", x = animals)
+"cot" "mouse" "impola"   #note that sub function only replaces the first match in the string 'impala' and not all matches
+#we can use gsub function if we want to replace not just first character matches but all of them
+gsub(pattern = "a", replacement = "o", x = animals)
+"cot" "mouse" "impolo" 
+
+#using or | operator with replacements
+gsub(pattern = "a|i|o", replacement = "_", x = animals)
+"c_t" "m_use" "_mp_l_"
+
+#Exercise: Find regular edu emails:
+You can use the caret, ^, and the dollar sign, $ to match the content located in the start and end of a string, respectively. 
+This could take us one step closer to a correct pattern for matching only the ".edu" email addresses from our list of emails. 
+But there's more that can be added to make the pattern more robust:
+@, because a valid email must contain an at-sign.
+.*, which matches any character (.) zero or more times (*). 
+Both the dot and the asterisk are metacharacters. You can use them to match any character between the at-sign 
+and the ".edu" portion of an email address.
+\\.edu$, to match the ".edu" part of the email at the end of the string. 
+The \\ part escapes the dot: it tells R that you want to use the . as an actual character.
+# The emails vector has already been defined for you
+emails <- c("john.doe@ivyleague.edu", "education@world.gov", "dalai.lama@peace.org",
+            "invalid.edu", "quant@bigdatacollege.edu", "cookie.monster@sesame.tv")
+
+# Use grepl() to match for .edu addresses more robustly
+grepl(pattern = "@.*\\.edu$", x = emails)
+
+# Use grep() to match for .edu addresses more robustly, save result to hits
+hits<- grep(pattern = "@.*\\.edu$", x = emails)
+
+# Subset emails using hits
+emails[hits]
+
+#Exercise with subs
+With the advanced regular expression "@.*\\.edu$", use sub() to replace the match with "@datacamp.edu". 
+Since there will only be one match per character string, gsub() is not necessary here. Inspect the resulting output.
+# The emails vector has already been defined for you
+emails <- c("john.doe@ivyleague.edu", "education@world.gov", "global@peace.org",
+            "invalid.edu", "quant@bigdatacollege.edu", "cookie.monster@sesame.tv")
+
+# Use sub() to convert the email domains to datacamp.edu
+sub(pattern = "@.*\\.edu$", replacement = "@datacamp.edu", x = emails)
+[1] "john.doe@datacamp.edu"    "education@world.gov"     
+[3] "global@peace.org"         "invalid.edu"             
+[5] "quant@datacamp.edu"       "cookie.monster@sesame.tv"
+
+
+#sub & gsub (2)
+Regular expressions are a typical concept that you'll learn by doing and by seeing other examples. 
+Before you rack your brains over the regular expression in this exercise, have a look at the new things that will be used:
+
+.*: A usual suspect! It can be read as "any character that is matched zero or more times".
+\\s: Match a space. The "s" is normally a character, escaping it (\\) makes it a metacharacter.
+[0-9]+: Match the numbers 0 to 9, at least once (+).
+([0-9]+): The parentheses are used to make parts of the matching string available to define the replacement. 
+The \\1 in the replacement argument of sub() gets set to the string that is captured by the regular expression [0-9]+.
+
+awards <- c("Won 1 Oscar.",
+  "Won 1 Oscar. Another 9 wins & 24 nominations.",
+  "1 win and 2 nominations.",
+  "2 wins & 3 nominations.",
+  "Nominated for 2 Golden Globes. 1 more win & 2 nominations.",
+  "4 wins & 1 nomination.")
+
+sub(".*\\s([0-9]+)\\snomination.*$", "\\1", awards)
+What does this code chunk return? 
+[1] "Won 1 Oscar." "24"           "2"            "3"            "2"           
+[6] "1"
