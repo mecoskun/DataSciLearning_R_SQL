@@ -1,0 +1,59 @@
+#remember lapply function
+lapply(mylist, function)
+#lapply returns output as a list because it applies a function to each element of a list which can be different type
+a list of different types need to be saved as a iist
+
+#however in most cases we apply a function to a list which contains elements of the same type (numbers ie.), in this case we can use sapply
+#sapply is simplified applies function, which is basically same as unlist(lapply), which returns an array
+
+cities <- c("New York", "Paris", "London")
+unlist(lapply(cities, nchar)
+8 5 6
+
+sapply(cities, nchar)
+New York Paris London
+       8     5      6
+
+#we can set names to FALSE 
+sapply(cities, nchar, USE.NAMES = FALSE)
+8 5 6
+
+#IF RETURNED OUTPUT FOR EACH ELEMENT IS MORE THAN ONE THEN SAPPLY RETURNS A MATRIX
+#IF SAPPLY CANNOT SIMPLIFY THE OUTPUT, FOR INSTANCE WHEN OUTPUT FOR EACH ELEMENT IS OF DIFFERENT LENGHT, THEN IT RETURNS A LIST JUST LIKE LAPPLY
+
+##VAPPLY
+#vapply function works like sapply and lapply, but it allows us to explicitely specify output format
+vapply(X, FUN, FUN.VALUE, ..., USE.NAMES = TRUE)
+
+#going back to cities example above
+vapply(cities, nchar, numeric(1)) #which returns a single numeric value for each element same as sapply above
+Output:
+New York Paris London
+       8     5      6
+
+#vapply is useful to check output format
+#below example uses a function that returns unique letters in a string
+sapply(cities, unique_letters)
+Output is a list, it cannot be simplified because each output is of different length:
+$'New York'
+[1] "N" "e" "w" "Y" "o" "r" "k"
+$'Paris'
+[2] "P" "a" "r" "i" "s"
+$'London'
+[3] "L" "o" "n" "d"
+
+#if we use vapply function by specifying output to be character of length 5 we get an error:
+vapply(cities, unique_letters, character(5)):
+Error: values must be length 5,
+       but FUN(X[[1]]) results in length 7
+      
+#Exercise 1: following code work the same
+# temp is already defined in the workspace
+
+# Convert to vapply() expression
+sapply(temp, max)
+vapply(temp, max, numeric(1))
+
+# Convert to vapply() expression
+sapply(temp, function(x, y) { mean(x) > y }, y = 5)
+vapply(temp, function(x, y) { mean(x) > y }, y = 5, logical(1))
