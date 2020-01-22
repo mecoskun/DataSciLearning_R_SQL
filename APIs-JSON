@@ -1,0 +1,178 @@
+#JSON data structure simple, concise, well-structured, human-readable
+used for communication with Web APIs
+
+#API: Application programming interface
+- set of routines and protocols for building software
+
+#Web API: 
+- interface to get or add data to server
+- HTTP verbs (GET and others)
+
+#Ex: Twitter API: https://dev.twitter.com/rest/public
+  - you can research effects of tweets
+  - search all tweets by one account
+  - place comments on tweets
+
+
+#Ex: Webpage, imdb movie Rain Man (1988)
+url <- "http://www.imdb.com/title/tt0095953/"
+#we can directly download movie info as html
+download.file(url, "local_imdb.html")
+
+## OMDb API
+#or we can use OMDb API to get info from imdb, as a JSON file
+http://www.omdbapi.com/?i=tt0095953&r=json
+
+#we can use jsonline package to use JSON file in R
+intall.packages("jsonlite")
+library(jsonlite)
+#convert file to R list:
+fromJSON("http://www.omdbapi.com/?i=tt0095953&r=json")
+
+#Exercise with OMDb API:
+# Definition of the URLs
+url_sw4 <- "http://www.omdbapi.com/?apikey=72bc447a&i=tt0076759&r=json"
+url_sw3 <- "http://www.omdbapi.com/?apikey=72bc447a&i=tt0121766&r=json"
+
+# Import two URLs with fromJSON(): sw4 and sw3
+sw4 <- fromJSON(url_sw4)
+sw3 <- fromJSON(url_sw3)
+
+# Print out the Title element of both lists
+sw4$Title
+sw3$Title
+
+# Is the release year of sw4 later than sw3?
+sw4$Year > sw3$Year
+
+
+#Exercise: we can import JSON data directly from the web
+# Definition of quandl_url
+quandl_url <- "https://www.quandl.com/api/v3/datasets/WIKI/FB/data.json?auth_token=i83asDsiWUUyfoypkgMz"
+
+# Import Quandl data: 
+quandl_data <- fromJSON(quandl_url)
+
+# Print structure of quandl_data
+str(quandl_data)
+
+
+##JSON Arrays:
+JSON_array
+[4, 5, 7, 4, 3, 2]
+
+#we can convert JSON arrays to R vectors using 
+fromJSON('[4, 5, 7, 4, 3, 2]')
+4 5 7 4 3 2
+
+#however JSON arrays can contain characters along with numbers, which converted to all chars in R
+JSON_array2
+[4, "a", 3, 6, "app", false, null]
+fromJSON('[4, "a", 3, 6, "app", false, null]')
+"4" "a" "3" "6" "app" "FALSE" NA
+
+
+#JSON Nesting:
+#sometimes JSON object includes another JSON object, R structures this as a list inside list
+r <- fromJSON('{"id":1, "name":"Frank", "age":23, "partner":{"id":4, "name":"Julie"}}')
+Rsrt(r)
+List of 4
+  $ id      : int 1
+  $ name    : chr "Frank"
+  $ age     : int 23
+  $ partner : List of 2
+   ..$ id   : int 4
+   ..$ name : chr "Julie"
+
+#JSON array of JSON Objects:
+[ {"id":1, "name":"Frank"},
+  {"id":4, "name":"Julie"},
+  {"id":12, "name":"Zach"} ]
+
+RfromJSON('[ {"id":1, "name":"Frank"},
+            {"id":4, "name":"Julie"},
+            {"id":12, "name":"Zach"} ]')
+
+#result is a Mapping which looks like a nice dataframe
+  id  name
+1  1  Frank
+2  4  Julie
+3 12  Zach
+
+
+#common jsonlite functions
+- toJSON()
+- prettify()
+- minify()
+
+
+#Exercise:
+#Adapt the code for json2 such that it's converted to a named list with two elements: a, containing the numbers 1, 2 and 3 and 
+b, containing the numbers 4, 5 and 6. Next, call fromJSON() on json2.
+json1 <- '{"a": [1, 2, 3], "b": [4, 5, 6]}'
+fromJSON(json1)
+
+# Challenge 2
+json2 <- '[{"a": 1, "b": 2}, {"a": 3, "b": 4}]'
+#Add characters to json2 such that the data frame in which the json is converted contains an additional observation in the last row. 
+#For this observations, a equals 5 and b equals 6. Call fromJSON() one last time, on json2.
+json2 <- '[{"a": 1, "b": 2}, {"a": 3, "b": 4}, {"a": 5, "b": 6}]'
+fromJSON(json2)
+  a b
+1 1 2
+2 3 4
+3 5 6
+
+
+#toJSON:
+Apart from converting JSON to R with fromJSON(), you can also use toJSON() to convert R data to a JSON format. 
+In its most basic use, you simply pass this function an R object to convert to a JSON. The result is an R object 
+of the class json, which is basically a character string representing that JSON.
+
+# URL pointing to the .csv file
+url_csv <- "http://s3.amazonaws.com/assets.datacamp.com/production/course_1478/datasets/water.csv"
+
+# Import the .csv file located at url_csv
+water <- read.csv(url_csv, stringsAsFactors = FALSE)
+
+# Convert the data file according to the requirements
+water_json <- toJSON(water)
+
+# Print out water_json
+water_json
+
+
+##Minify and prettify
+
+#JSONs can come in different formats. Take these two JSONs, that are in fact exactly the same: the first one is in a minified format, 
+#the second one is in a pretty format with indentation, whitespace and new lines:
+
+# Mini
+{"a":1,"b":2,"c":{"x":5,"y":6}}
+
+# Pretty
+{
+  "a": 1,
+  "b": 2,
+  "c": {
+    "x": 5,
+    "y": 6
+  }
+}
+
+Unless you're a computer, you surely prefer the second version. However, the standard form that toJSON() returns, 
+is the minified version, as it is more concise. You can adapt this behavior by setting the pretty argument inside toJSON() to TRUE. 
+If you already have a JSON string, you can use prettify() or minify() to make the JSON pretty or as concise as possible.
+
+#EX:
+# Convert mtcars dataset to a pretty JSON: 
+pretty_json <- toJSON(mtcars, pretty = TRUE)
+
+# Print pretty_json
+pretty_json
+
+# Minify pretty_json: 
+mini_json <- minify(pretty_json)
+
+# Print mini_json
+mini_json
