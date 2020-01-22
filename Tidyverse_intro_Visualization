@@ -1,0 +1,171 @@
+library(gapminder)
+library(dplyr)
+
+gapminder
+
+#filtering; we use pipe '%>%' which says keep what is before and operate on it
+gampinder %>%
+  filter(year == 2007)
+
+#we can double filter
+gampinder %>%
+  filter(year == 2007, country == "United States")
+  
+#arrange function sorts a table based on  a variable in ascending order
+gapminder %>%
+  arrange(year)
+  
+#we can also use arrange to sort table in descending order of a variable
+gapminder %>%
+  arrange(desc(year))
+
+#we can combine filter and arrange with pipelines:
+gapminder %>%
+  filter(year == 2008) %>%
+  arrange(desc(gdpPercap))
+
+
+#mutate function changes or adds variables
+gapminder %>%
+  mutate(pop = pop/1000000)
+
+#add new variable 
+gapminder %>%
+  mutate(gdp = gdpPercap * pop)
+
+
+##Visualization with ggplot2
+library(ggplot2)
+
+#variable assignment
+gapminder_2007 <- gapminder %>% filter(year==2007)
+ 
+#create a scatterplot, geom_point makes each observation a point to show scatterplot
+ggplot(gapminder_2007, aes(x = gdpPercap, y=lifeExp)) + geom_point() 
+
+##logarithmic scales
+#to linearize visualization of a large scale variable in scatter graphs we add scale option:
+ggplot(gapminder_2007, aes(x = gdpPercap, y=lifeExp)) + geom_point() + scale_x_log10()
+
+#similarly adding scale_y_log10() linearizes y axis
+
+
+##Additional aesthetics
+#color representation for categorical variables:
+ggplot(gapminder_2007, aes(x = gdpPercap, y=lifeExp, color = continent)) + geom_point() + scale_x_log10()
+
+#we can also add size option to represent another variable, population in this case:
+ggplot(gapminder_2007, aes(x = gdpPercap, y=lifeExp, color = continent, size = pop)) + geom_point() + scale_x_log10()
+
+
+#Faceting: dividing the plot into subplots for a categorical variable (~ means by)
+ggplot(gapminder_2007, aes(x = gdpPercap, y=lifeExp)) + geom_point() + scale_x_log10() + facet_wrap(~continent)
+
+#Exercise:
+# Scatter plot comparing gdpPercap and lifeExp, with color representing continent
+# and size representing population, faceted by year
+ggplot(gapminder, aes(x = gdpPercap, y=lifeExp, color=continent, size = pop)) + geom_point() + scale_x_log10() + facet_wrap(~year)
+
+
+##DATA TRANSPOFMATION
+#the summarize verb
+#summarize() turns many rows into one
+gapminder %>% summarize(meanlifeExp = mean(lifeExp))
+
+#we can summarize multiple variables by also filtering a year:
+gapminder %>% 
+  filter(year == 2007) %>%
+  summarize(meanlifeExp = mean(lifeExp), totalPop = sum(pop))
+
+#we can also use group_by function to find summaries by group
+#summarize median life expecancy and max gdppercap by year
+gapminder %>% 
+  group_by(year) %>%
+  summarize(medianLifeExp = median(lifeExp), maxGdpPercap = max(gdpPercap))
+
+#we can group by several variables:
+gapminder %>% 
+  group_by(year, continent) %>%
+  summarize(medianLifeExp = median(lifeExp), maxGdpPercap = max(gdpPercap))
+  
+#Visualization summarized data
+#lets save year summary in a new object
+by_year <- gapminder %>% 
+  group_by(year) %>%
+  summarize(totalPop = sum(pop), meanLifeExp = mean(lifeExp))
+
+#lets graph total population by year and also add 0-point on our graph
+ggplot(by_year, aes(x = year, y = totalPop)) + geom_point() + expand_limits(y = 0)
+
+by_year_continent <- gapminder %>% 
+  group_by(year, continent) %>%
+  summarize(totalPop = sum(pop), meanLifeExp = mean(lifeExp))
+
+#we can represent different continents with colors on our graph
+ggplot(by_year_continent, aes(x = year, y = totalPop, color = continent)) + geom_point() + expand_limits(y = 0)
+
+#Exercise: Comparing median life expectancy and median GDP per continent in 2007
+#Filter the gapminder dataset for the year 2007, then summarize the median GDP per capita and the median life expectancy
+within each continent, into columns called medianLifeExp and medianGdpPercap. Save this as by_continent_2007.
+#Use the by_continent_2007 data to create a scatterplot comparing these summary statistics for continents in 2007, 
+putting the median GDP per capita on the x-axis to the median life expectancy on the y-axis. Color the scatter plot by continent. 
+You don't need to add expand_limits(y = 0) for this plot.
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+
+# Summarize the median GDP and median life expectancy per continent in 2007
+by_continent_2007 <- gapminder %>%
+  filter(year==2007) %>%
+  group_by(continent) %>%
+  summarize(medianLifeExp = median(lifeExp), medianGdpPercap = median(gdpPercap))
+
+# Use a scatter plot to compare the median GDP and median life expectancy
+ggplot(by_continent_2007, aes(x=medianGdpPercap, y=medianLifeExp, color=continent)) + geom_point()
+
+
+##LINE PLOTS, BAR GRAPHS, HISTOGRAMS, BOX PLOTS
+
+#Line plot using geom_line()
+by_year_continent <- gapminder %>% 
+  group_by(year, continent) %>%
+  summarize(totalPop = sum(pop), meanLifeExp = mean(lifeExp))
+
+#we can represent different continents with colors on our graph
+ggplot(by_year_continent, aes(x = year, y = totalPop, color = continent)) + geom_line() + expand_limits(y = 0)
+
+#Bar Plots
+by_continent <- gapminder %>% 
+  filter(year == 2007) %>%
+  group_by(continent) %>%
+  summarize(meanLifeExp = mean(lifeExp))
+
+#we create bar plots with x being a categorical variable and using geom_col()
+gglpot(by_continent, aes(x = continent, y = meanLifeExp)) + geom_col()
+
+
+#HISTOGRAMs
+#histograms show distribution: geom_histogram(binwidth = )
+#binwidth specified to 5, putting 5 years in each bar
+ggplot(gapminder_2007, aes(x = lifeExp)) + geom_histogram(binwidth = 5)
+
+#we can also create histogram by specifying number of bins:
+ggplot(gapminder_2007, aes(x = pop_by_mil)) + geom_histogram(bins = 50)
+
+
+#BOXPLOTS
+#boxplots show distribution of a variable (y) within different categories of another variable (x)
+ggplot(gapminder_2007, aes(x = continent, y = lifeExp)) + geom_boxplot( )
+
+
+##TITLE for your graph
+#add a title to your plot, we need to name our plot
+myboxplot <- ggplot(gapminder_2007, aes(x = continent, y = lifeExp)) + geom_boxplot( )
+print(myboxplot + ggtitle("This is my title"))
+
+# We can also add a title directly in ggplot:
+ggplot(gapminder_1952, aes(x = continent, y = gdpPercap)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  ggtitle("Comparing GDP per capita across continents")
+
