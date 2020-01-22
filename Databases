@@ -1,0 +1,161 @@
+##Databases in R
+
+#different R packages: RMySQL, RPostgresSQL, ROracle
+
+install.packages("RMySQL")
+#this automatically installs DBI package as well
+#dbConnect() creates a connection between your R session and a SQL database. The first argument has to be a DBIdriver object, 
+that specifies how connections are made and how data is mapped between R and the database. 
+Specifically for MySQL databases, you can build such a driver with RMySQL::MySQL().
+If the MySQL database is a remote database hosted on a server, you'll also have to specify the following arguments in dbConnect(): 
+dbname, host, port, user and password. 
+
+#create connection to MySQL database:
+con <- dbConnect(RMySQL::MySQL(), #Construct SQL driver using MySQL function from RMySQL package
+            dbname = "company",
+            host = "courses.csrrinzqubik.us-east-1.rds.amazonaws.com",
+            port = 3306,
+            user = "student",
+            password = "datacamp")
+
+#resulting con is DBIConnection object
+
+
+##Import table data from database
+
+#list tables in the database
+dbListTables(con)
+output: "employees", "products", "sales"
+
+#lets read one table, result is a dataframe
+dbReadTable(con, "employees")
+
+#after our work is done we disconnect from the database
+dbDisconnect(con)
+
+
+#Exercise:
+#Read all tables in a database using lapply:
+# Get table names
+table_names <- dbListTables(con)
+
+# Import all tables
+tables <- lapply(table_names, dbReadTable, conn = con)
+
+# Print out tables
+tables
+
+
+## SQL Queries from inside R
+#queries help us selectively import data without need to import whole database tables into R
+
+#check below example which imports employees who started after Sept 1 2012
+
+#importing whole database table employees:
+employees <- dbReadTable(con, "employees")
+subset(employees, subset = started_at > "2012-09-01", select = name)
+
+#We can get same information directly with an SQL query in R
+dbGetQuery(con, "SELECT name FROM employees WHERE started_at > "2012-09-01"")
+
+#another example selecting products with 1 contract:
+products <- dbReadTable(con, "products")
+subset(products, subset = contract==1)
+#or use a query: note that * stands for all columns
+dbGetQuery(con, "SELECT * FROM products WHERE contract = 1")
+
+
+#Exercise: 
+Suppose that you have a people table, with a bunch of information. This time, you want to find out the age and country of married males.
+Provided that there is a married column that's 1 when the person in question is married, the following query would work.
+
+SELECT age, country
+  FROM people
+    WHERE gender = "male" AND married = 1
+
+dbGetQuery(con, "SELECT age, country FROM people WHERE gender = "male" AND married = 1")
+
+
+#Exercise:
+Create a data frame, short, that selects the id and name columns from the users table where the number of characters 
+in the name is strictly less than 5.
+
+# Create data frame short
+short <- dbGetQuery(con, "SELECT id, name FROM users WHERE CHAR_LENGTH(name) < 5")
+
+
+##INNER JOIN
+Of course, SQL does not stop with the the three keywords SELECT, FROM and WHERE. Another very often used keyword is JOIN, 
+and more specifically INNER JOIN. Take this call for example:
+
+SELECT name, post
+  FROM users INNER JOIN tweats on users.id = user_id
+    WHERE date > "2015-09-19"
+
+Here, the users table is joined with the tweats table. This is possible because the id column in the users table corresponds 
+to the user_id column in the tweats table. Also notice how name, from the users table, and post and date, from the tweats table, 
+can be referenced to without problems.
+
+
+##DBI internals
+
+#dbSendQuery and dbFetch
+
+dbGetQuery(con, "SELECT * FROM products WHERE contract = 1")
+
+You've used dbGetQuery() multiple times now. This is a virtual function from the DBI package, but is actually implemented 
+by the RMySQL package. Behind the scenes, the following steps are performed:
+
+Sending the specified query with dbSendQuery();
+Fetching the result of executing the query on the database with dbFetch();
+Clearing the result with dbClearResult().
+
+#we can do the same by using send query and fetch and then clearing the result. This is useful when we deal with data chunk by chunk
+res <- dbSendQuery(con, "SELECT * FROM products WHERE contract = 1")
+dbFetch(res)
+dbClearResult(res)
+
+#This is tedious to write, but it gives you the ability to fetch the query's result in chunks rather than all at once. 
+#You can do this by specifying the n argument inside dbFetch().
+#sending query record by record:
+
+res <- dbSendQuery(con, "SELECT * FROM products WHERE contract = 1")
+
+while(!dbHasCompleted(res)) {
+  + chunk <- dbFetch(res, n=1)
+  + print(chunk)
+  + }
+
+dbClearResult(res)
+dbDisconnect(con)
+
+
+## HTTP ##
+
+#DATA on the Web; HTTP: HyperText Transfer Protocol
+#HTTP is a system of rules about data exchange between computers, language of the web
+#for more on HTTP from inside R check R package httr by Hadley Wickham
+
+#consider a data file on a webpage with url: http://s3.amazonaws.com/.../states.csv
+
+#usually we manually download file to our computer and read using file path:
+read.csv(url("path/to/states.csv"))
+
+#however we can directly access the file through web url:
+read.csv("http://s3.amazonaws.com/assets.datacamp.com/course/importing_data_into_r/states.csv")
+
+#here R understand the web url and calls http behind the scenes to get the dataframe
+#same command also works with https for secure websites
+
+#read.csv() and read.delim(), are capable of automatically importing from URLs that point to flat files on the web.
+#readr package functions read_csv and read_tsv (for txt files) also work on urls
+#so as read.xls() from gdata
+
+# we can also download a file using download.file() with file.path()
+url <- "http://s3.amazonaws.com/assets.datacamp.com/course/importing_data_into_r/cities.xlsx"
+dest_path <- file.path("~", "my_local_cities.xlsx") #~ means current working directory getWD(), setWD()
+download.file(url, dest_path)
+
+#then we can read excel file from path
+read_excel(dest_path)
+
