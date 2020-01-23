@@ -1,0 +1,120 @@
+## haven and foreign packages work to import datafiles from other Statistical Software Programs like SAS, STATA, SPSS
+
+#SAS is used by business analysts, and has data file extensions: .sas7bdat .sas7bcat
+#STATA is used by Economists and social scientists: .dta
+#SPSS is popular in social sciences, especially education researchers: .sav .por
+
+
+#haven Package
+install.packages("haven")
+library(haven)
+
+#read SAS data:
+flights <- read_sas("flights.sas7bdat")
+str(flights)  #we see that the data has labels (laber attribute in dataframe corresponds to that)
+view(flights) #allows us to examine data with labels
+
+#read STATA data:
+read_stata()
+read_dta()
+
+flights <- read_stata("flights.dta")
+flights <- read_dta("flights.dta")
+flights
+
+#notice that if STATA data is labeled, R dataframe will just show data values but not labels
+# we can convert labels to R factor data using as.factor() 
+
+as_factor(flights$Airline)
+TWA Southwest Northwest American Spirit
+Levels: Alaska American American West ... US Airways
+
+#or we can convert the labels to characters
+as.character(as_factor(flights$Airline))
+
+#and we can assign this back to original variable:
+flights$Airline <- as.character(as_factor(flights$Airline))
+
+
+#SPSS data
+read_spss()
+read_por() # for .por files
+read_sav() # for .sav files
+
+read_sav(file.path("~", "datasets", "flights.sav"))
+
+
+##haven package can be used to read files from url
+#In this exercise, you will work with data on yearly import and export numbers of sugar, both in USD and in weight. 
+#The data can be found at: http://assets.datacamp.com/production/course_1478/datasets/trade.dta
+
+# Import the data from the URL: sugar
+sugar <- read_dta("http://assets.datacamp.com/production/course_1478/datasets/trade.dta")
+
+# Structure of sugar
+str(sugar)
+
+#Convert the values in the Date column of sugar to dates, using as.Date(as_factor(___)).
+# Convert values in Date column to dates
+sugar$Date <- as.Date(as_factor(sugar$Date))
+
+# Structure of sugar again
+str(sugar)
+
+
+#Exercise: read sav file and select a subset:
+# Import person.sav: 
+traits <- read_sav("person.sav")
+
+# Summarize traits
+summary(traits)
+
+#Print out a subset of those individuals that scored high on Extroversion and on Agreeableness, i.e. scoring higher than 40 on each
+subset(traits, Extroversion > 40 & Agreeableness >40)
+
+
+## foreign package
+less consistent across software packages, very comprehensive, covers all kinds of data formats
+install.packages("foreign")
+library(foreign)
+
+#SAS
+cannot import .sas7bdat
+only SAS libraries: .xport
+
+#STATE
+STATA 5 - 12 versions
+read.dta()
+
+read.dta(file, convert.factors = TRUE, convert.dates = TRUE, missing.type = FALSE)
+#convert.factors: converts labelled STATA values to R factors
+#convert.dates: converts STATA dates and time values to R date and POSIXct formats
+#missing.type: if FALSE, convert all types of missing values to NA
+               if TRUE, stores how values are missing in attributes
+#convert.underscore: Convert "_" in Stata variable names to "." in R names?
+
+
+#SPSS
+read.spss(file, use.value.labels = TRUE, to.data.frame = FALSE)
+use.value.labels: convert labelled SPSS values to R factors
+to.data.frame: return data frame instead of a list
+
+
+#Exercise: using subset to count observations
+edu_equal_1 <- read.csv("edu_equal_1.csv")
+
+Now that you have it in R, it's pretty easy to get some basic insights.
+For example, you can ask yourself how many observations (e.g. how many people) have an age higher than 40 and are literate? 
+
+#When you call:
+str(edu_equal_1)
+#You'll see that age is an integer, and literate is a factor, with the levels "yes" and "no". 
+#The following expression thus answers the question:
+
+nrow(subset(edu_equal_1, age > 40 & literate == "yes"))
+
+#Up to you to answer a similar question now:
+#How many observations/individuals of Bulgarian ethnicity have an income above 1000?
+nrow(subset(edu_equal_1, income > 1000 & ethnicity_head == "Bulgaria"))
+
+
