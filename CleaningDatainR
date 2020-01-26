@@ -1,0 +1,326 @@
+#Exploring Data:
+class(data)
+"data.frame"
+
+dim() #dimensions of data
+names() #names of columns
+str() #structure of data
+summary() #summary of data
+
+#dplyr pachage
+library(dplyr)
+glimpse() #structure of data, using dplyr 
+
+head( , 7)  #view first 7 rows of data
+tail( , 10) #last 10 rows of data
+hist(data$x)      #see histogram of variable x in data
+plot(x, y) #scatter plot of two variables
+
+
+##tidy data
+#check "tidy data" paper by Hadley Wickham in Journal of Statistical Software
+
+observations as rows
+variables as columns
+one type of observational unit per table
+
+#tidyr package by Hadley Wickham
+
+#gather columns into key-value pairs
+wide_df 
+  col A B C
+1   X 1 2 3
+2   Y 4 5 6
+
+#gather the columns of wide_df:
+long_df <- gather(wide_df, my_key, my_val, -col)  #my_key is the name of new key column, my_val is the name of new value column
+  col my_key  my_val
+1   X   A       1
+2   Y   A       4
+3   X   B       2
+4   Y   B       5
+5   X   C       3
+6   Y   C       6
+
+# we can do the reverse, convert long_df to wide_df by using spread(long_df, my_key, my_val)
+
+#Exercise:
+#Call gather() on the weather data to gather columns X1-X31. The two columns created as a result should be called day and value. 
+#Save the result as weather2, remove missing values (na.rm = TRUE)
+weather2 <- gather(weather, day, value, X1:X31, na.rm = TRUE)
+
+
+#Separate columns
+#separate() can be used to separate one column into more; it looks for a character value and separates it based on a separator -,:,/
+separate(my_data, my_column, c("part1", "part2")) #final argument is the name of new columns
+separate(data, col, c("colname1", "colname2"), sep = "_" ) #we can specify the separator operator if necessary
+
+#Unite columns
+#Unite function works as reverse of separate, it combines columns using an underscore"_", we could specify separator with sep argument
+my_data
+var1  var2  col1  col2
+  X     A   2010    10
+  
+unite(my_data, new_column, col1, col2)
+var1  var2  new_column
+  X     A     2010_10
+  
+#Example: Create a new column called date. Use the unite() function from tidyr to paste together the year, month, and day 
+columns in order, using - as a separator (see ?unite if you need help).
+weather
+year month day temperature
+2020     1  24        59 
+weather2 <- unite(weather, date, year, month, day, sep = "-")
+weather2
+date        temperature
+2020-1-24           59
+
+#Example:
+bmi #variable tracks bmi in countries over the years (1980-2008), but yearly values of bmi are saves as different columns
+> head(bmi)
+              Country    Y1980    Y1981    Y1982    Y1983    Y1984    Y1985
+1         Afghanistan 21.48678 21.46552 21.45145 21.43822 21.42734 21.41222
+2             Albania 25.22533 25.23981 25.25636 25.27176 25.27901 25.28669
+3             Algeria 22.25703 22.34745 22.43647 22.52105 22.60633 22.69501
+4             Andorra 25.66652 25.70868 25.74681 25.78250 25.81874 25.85236
+5              Angola 20.94876 20.94371 20.93754 20.93187 20.93569 20.94857
+6 Antigua and Barbuda 23.31424 23.39054 23.45883 23.53735 23.63584 23.73109
+
+> dim(bmi)
+[1] 199  30
+
+# Apply gather() to bmi and save the result as bmi_long
+bmi_long <- gather(bmi, year, bmi_val, -Country)
+
+# View the first 20 rows of the result
+head(bmi_long, 20)
+               Country  year  bmi_val
+1          Afghanistan Y1980 21.48678
+2              Albania Y1980 25.22533
+3              Algeria Y1980 22.25703
+4              Andorra Y1980 25.66652
+5               Angola Y1980 20.94876
+6  Antigua and Barbuda Y1980 23.31424
+7            Argentina Y1980 25.37913
+8              Armenia Y1980 23.82469
+9            Australia Y1980 24.92729
+10             Austria Y1980 24.84097
+11          Azerbaijan Y1980 24.49375
+12             Bahamas Y1980 24.21064
+13             Bahrain Y1980 23.97588
+14          Bangladesh Y1980 20.51918
+15            Barbados Y1980 24.36372
+16             Belarus Y1980 24.90898
+17             Belgium Y1980 25.09879
+18              Belize Y1980 24.54345
+19               Benin Y1980 20.80754
+20             Bermuda Y1980 25.07881
+...
+
+> dim(bmi_long)
+[1] 5771    3
+
+# Apply spread() to bmi_long to reverse the above gather operation
+bmi_wide <- spread(bmi_long, year, bmi_val)
+
+#Example
+#Variables are stored in both rows and columns
+#Sometimes you'll run into situations where variables are stored in both rows and columns. To illustrate this, 
+#we've loaded the pets dataset from the video, which tells us in a convoluted way how many birds, cats, and dogs Jason, Lisa, 
+#and Terrence have. Print the pets dataset to see for yourself.
+
+> head(pets,15)
+     owner type num
+1    Jason  dog   2
+2    Jason  cat   4
+3    Jason bird   3
+4     Lisa  dog   7
+5     Lisa  cat  10
+6     Lisa bird   9
+7 Terrence  dog   8
+8 Terrence  cat   5
+9 Terrence bird   1
+
+#Although it may not be immediately obvious, if we treat the values in the type column as variables and create a separate column 
+#for each of them, we can set things straight. To do this, we use the spread() function. Run the following code to see for yourself:
+
+spread(pets, type, num)
+     owner bird cat dog
+1    Jason    3   4   2
+2     Lisa    9  10   7
+3 Terrence    1   5   8
+
+#The result shows the exact same information in a much clearer way! Notice that the spread() function took in three arguments. 
+#The first argument takes the name of your messy dataset (pets), the second argument takes the name of the column to spread into 
+#new columns (type), and the third argument takes the column that contains the value with which to fill in the newly spread out columns (num).
+
+
+#Types Conversions
+
+class() #checks class of variable
+
+#some type conversions
+as.character(2020)
+"2020"
+
+as.numeric(TRUE)
+1
+
+as.factor("yes")
+yes
+Levels: yes
+
+as.logical(0)
+FALSE
+
+#mutate_at() function
+Run the call to mutate_at as-is to conveniently apply as.numeric() to all columns from CloudCover through WindDirDegrees 
+(reading left to right in the data):
+# Convert characters to numerics
+weather2 <- mutate_at(weather, vars(CloudCover:WindDirDegrees), funs(as.numeric))
+
+#Exercise: IMPORTANT!
+It's important to keep in mind that coercions are not always successful, particularly if there's some data in a column that 
+you don't expect. For example, the following will cause problems:
+
+as.numeric(c(4, 6.44, "some string", 222))
+
+If you run the code above in the console, you'll get a warning message saying that R introduced an NA in the process of coercing to 
+numeric. This is because it doesn't know how to make a number out of a string ("some string"). 
+
+
+## lubridate package is used for date conversions
+library(lubridate)
+ymd("2018 August 12")
+"2018-08-12 UTC"
+
+mdy("August 12 2018")
+"2018-08-12 UTC"
+
+dmy("17 Sep 2015")
+"2015-09-17"
+
+hms("13:33:09")
+"13H 33M 9S)
+
+ymd_hms("2018-08-12 13.33.09")
+"2018-08-12 13:33:09 UTC"
+
+
+##String Manipulation
+
+#stringr package
+library(stringr)
+
+#str_trim function trims leading and trailing white space
+str_trim("    this is a test"    )
+"this is a test"
+
+#Pad string with zeros
+str_pad("24493", width = 7, side = "left", pad = "0")
+"0024493"
+
+# Pad these strings with leading zeros
+str_pad(c("23485W", "8823453Q", "994Z"),width = 9, side = "right", pad= "0")
+"23485W000" "8823453Q0" "994Z00000"
+
+#search for a string in a vector
+pets <- c("cat", "dog")
+str_detect(pets, "cat")
+TRUE FALSE
+
+#replace string elements
+str_replace(pets, "dog", "duck")
+pets
+"cat" "duck"
+
+#tolower makes all strings lowercase, toupper makes all UPPERCASE
+tolower("I LOVE CATS")
+"i love cats"
+
+toupper("uppercase")
+"UPPERCASE"
+
+
+## MISSING and SPECIAL VALUES
+-may be random, but dangerous to assume
+-sometimes associated with variable/outcome of interest (introduces bias)
+- represented by NA in R
+- single dot in SPSS, SAS, STATA
+- sometimes empty string
+
+#other special values in R
+- Inf :infinity 
+  1/0, 33333^33333
+  
+- NaN: Not a number
+  0/0,  1/0 - 1/0
+
+
+#Finding missing values
+
+data_frame <- c(1, NA, 3, 5, NA)
+is.na(data_frame) 
+FALSE TRUE FALSE FALSE TRUE
+
+#check for ANY missing values
+any(is.na(data_frame))
+
+#check the number of missing values
+sum(is.na(data_frame))
+3
+
+#find which observations are missing from column1 in data_frame
+which(is.na(data_frame$column1))
+
+#check which char observations are empty strings
+which(data_frame$charcolumn == "")
+
+#EXample:
+# Find date columns (which contains dt in their names)
+date_cols <- str_detect(names(sales5), "dt")
+# Create logical vectors indicating missing values
+missing <- lapply(sales[, date_cols], is.na)
+# Create a numerical vector that counts missing values: num_missing
+num_missing <- sapply(missing, sum)
+num_missing
+         event_dt        event_dt.1        presale_dt         onsale_dt 
+                0                 0              2892               101 
+    ord_create_dt sales_ord_tran_dt          print_dt 
+                4                 0               424
+
+
+summary() #tells us number of NA's in each variable
+
+#Find rows with no missing values
+complete.cases(data_frame)
+
+#Subset data, keeping only complete cases (drop all observations with missing values for any variable)
+data[complete.cases(data), ]
+
+#Another way to remove rows with missing values NAs
+na.omit(data)
+
+
+## Outliers and obvious errors
+- extreme values
+- may have several causes
+- variability in measurement
+- may be experimental error
+- data entry error
+- may be discarded or retained depending on case
+-Obvious data errors should be removed
+- values outside plausable data range (negative age ie.)
+- measurement error
+- special code for missing data (-1 for instance)
+
+
+#view a boxplot to examine outliers
+boxplot(x, horizontal = TRUE)
+
+#or view Histongram of data variables
+hist(data$var1, breaks = 20)
+
+
+
+
