@@ -1,0 +1,111 @@
+## Harmonic mean
+
+#The harmonic mean is the reciprocal of the arithmetic mean of the reciprocal of the data. That is
+#used to average ratio data
+
+harmonic_mean(x)=1/arithmetic_mean(1/x)
+
+#The harmonic mean is often used to average ratio data. 
+
+#You'll be using it on the price/earnings ratio of stocks in the Standard and Poor's 500 index, provided as std_and_poor500. 
+#Price/earnings ratio is a measure of how expensive a stock is.
+
+#The dplyr package is loaded:
+library(dplyr)
+
+#lets write harmonic mean function, and use it on standards and poor data
+
+# Look at the Standard and Poor 500 data
+glimpse(std_and_poor500)
+Observations: 505
+Variables: 5
+$ symbol   <chr> "MMM", "ABT", "ABBV", "ABMD", "ACN", "ATVI", "ADBE", "AMD"...
+$ company  <chr> "3M Company", "Abbott Laboratories", "AbbVie Inc.", "ABIOM...
+$ sector   <chr> "Industrials", "Health Care", "Health Care", "Health Care"...
+$ industry <chr> "Industrial Conglomerates", "Health Care Equipment", "Phar...
+$ pe_ratio <dbl> 18.31678, 57.66621, 22.43805, 45.63993, 27.00233, 20.13596...
+
+# Write a function to calculate the reciprocal
+get_reciprocal <- function(x) {
+  1/x
+}
+
+# Write a function to calculate the harmonic mean
+calc_harmonic_mean <- function(x) {
+  x %>%
+    get_reciprocal() %>%
+    mean() %>%
+    get_reciprocal()
+}
+
+#Using std_and_poor500, group by sector, and summarize to calculate the harmonic mean of the price/earning ratios in the pe_ratio column.
+std_and_poor500 %>% 
+  # Group by sector
+  group_by(sector) %>% 
+  # Summarize, calculating harmonic mean of P/E ratio
+  summarize(hmean_pe_ratio = calc_harmonic_mean(pe_ratio))
+
+# It looks like we have a problem though: most sectors have missing values.
+#Modify the signature and body of calc_harmonic_mean() so it has an na.rm argument, defaulting to false, that gets passed to mean().
+calc_harmonic_mean <- function(x, na.rm = FALSE) {
+  x %>%
+    get_reciprocal() %>%
+    mean(na.rm = na.rm) %>%
+    get_reciprocal()
+}
+
+#Using std_and_poor500, group by sector, and summarize to calculate the harmonic mean of the price/earning ratios in the pe_ratio column,
+#removing missing values.
+std_and_poor500 %>% 
+  # Group by sector
+  group_by(sector) %>% 
+  # Summarize, calculating harmonic mean of P/E ratio
+  summarize(hmean_pe_ratio = calc_harmonic_mean(pe_ratio, na.rm = TRUE))
+  # A tibble: 11 x 2
+   sector                 hmean_pe_ratio
+   <chr>                           <dbl>
+ 1 Communication Services           17.5
+ 2 Consumer Discretionary           15.2
+ 3 Consumer Staples                 19.8
+ 4 Energy                           13.7
+ 5 Financials                       12.9
+ 6 Health Care                      26.6
+ 7 Industrials                      18.2
+ 8 Information Technology           21.6
+ 9 Materials                        16.3
+10 Real Estate                      32.5
+11 Utilities                        23.9
+
+# now convert na.rm argument into a passing argument using the ellipses ...
+#Replace the na.rm argument with ... in the signature and body of calc_harmonic_mean().
+calc_harmonic_mean <- function(x, ...) {
+  x %>%
+    get_reciprocal() %>%
+    mean(...) %>%
+    get_reciprocal()
+}
+
+#code works out nice:
+std_and_poor500 %>% 
+  # Group by sector
+  group_by(sector) %>% 
+  # Summarize, calculating harmonic mean of P/E ratio
+  summarize(hmean_pe_ratio = calc_harmonic_mean(pe_ratio, na.rm = TRUE))
+# A tibble: 11 x 2
+   sector                 hmean_pe_ratio
+   <chr>                           <dbl>
+ 1 Communication Services           17.5
+ 2 Consumer Discretionary           15.2
+ 3 Consumer Staples                 19.8
+ 4 Energy                           13.7
+ 5 Financials                       12.9
+ 6 Health Care                      26.6
+ 7 Industrials                      18.2
+ 8 Information Technology           21.6
+ 9 Materials                        16.3
+10 Real Estate                      32.5
+11 Utilities                        23.9
+
+
+
+
