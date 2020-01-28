@@ -1,0 +1,113 @@
+## ENVIRONMENTS
+
+#are a type of variable that is used to store other variables
+#are like lists
+
+datacamp_list <- list(
+  name = "Datacamp",
+  founding_year = 2013,
+  website = "https://datacamp.com"
+)
+
+ls.str(datacamp_list)  #hybrid of ls and str functions, gives a compact summary of multiple vars at once
+founding_year: num 2013
+name: chr "Datacamp"
+website: chr "https://datacamp.com"
+
+
+##convert list to environment using list2env function
+datacamp_env <- list2env(datacamp_list)
+
+#contents of environment are the same:
+ls.str(datacamp_env)
+founding_year: num 2013
+name: chr "Datacamp"
+website: chr "https://datacamp.com"
+
+
+# the difference between a list and environment is environments have parents, so we can form a sequence of nested environments
+
+parent <- parent.env(datacamp_env)
+environmentName(parent)
+"R_GlovalEnv"
+
+grandparent <- parent.env(parent)
+environmentName(grandparent)        #parent of a parent environment is 
+"package:stats"
+
+search() #function shows all the parent environments from the global environment and onwards
+".GlobalEnv"
+"package:stats"
+"package:graphics"
+"package:grDevices"
+"package:utils"
+"package:datasets"
+"package:methods"
+"Autoloads"
+"package:base"
+
+#base ebvironment at the end has a special environment called the empty environment, which is the final biggest realm
+
+
+#we can test existence of a variable in an environment:
+exists("founding_year", envir = datacamp_env)
+TRUE
+
+#if we define a variable in global environment and search its existence in an environment R still finds it by looking in the parent,
+#then the grandparent, and so on until it finds it.
+datacamp_env <- list2env(datacamp_list)
+x <- 5
+exists(x, envir = datacamp_env)
+TRUE
+
+#we can force R to only look for a variable in the environment we asked for by setting inherits to FALSE
+exists(x, envir = datacamp_env, inherits = FALSE)
+FALSE
+
+
+#FUNCTIONS and ENVIRONMENTS
+
+#When we call a function R gives it an environment to store its variables
+# a function's variable is not to be found in the gloval environment, its in a child environment instead
+#when R runs a function's code it first looks for variables in its special environment and if it cannot find variables there,
+#then R looks in the global
+
+#Example:
+x_times_y <- function(x) {
+  x * y
+}
+
+x_times_y(10)
+Error ... : object 'y' not found
+
+x_times_y <- function(x) {
+  x * y
+}
+y <- 4
+
+x_times_y(10)  #in this calculation of function x_times_y R gets y value from parent environment
+40
+
+x_times_y <- function(x) {
+  y <- 3
+  x * y
+}
+
+print(y)
+Error in print(y): object 'y' not found   
+#the function's variable y cannot be found in the global environment because its in the child envionment
+
+#if you define a variable both inside and outside a function R uses variable inside the function to calculate its outcome
+
+x_times_y <- function(x) {
+  y <- 2
+  x * y
+}
+y <- 1
+
+x_times_y(10)
+20              #here R used y variable in the function's environment
+
+print(y)
+1               #here R uses y in the global environment
+
