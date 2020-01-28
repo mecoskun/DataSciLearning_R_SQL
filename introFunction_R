@@ -1,0 +1,519 @@
+## FUNCTIONS
+
+#why do we write functions:
+- can reduce your workload
+- help avoid errors
+
+
+#Calling Functions:
+
+#Add New Variables
+#mutate() adds new variables and preserves existing; transmute() drops existing variables.
+# Newly created variables are available immediately
+mtcars %>% as_tibble() %>% mutate(
+  cyl2 = cyl * 2,
+  cyl4 = cyl2 * 2
+)
+
+# You can also use mutate() to remove variables by assigning them to NULL and modify existing variables
+mtcars %>% as_tibble() %>% mutate(
+  mpg = NULL,
+  disp = disp * 0.0163871 # convert to litres
+)
+
+# mutate() vs transmute --------------------------
+# mutate() keeps all existing variables
+mtcars %>%
+  mutate(displ_l = disp / 61.0237)
+
+# transmute keeps only the variables you create
+mtcars %>%
+  transmute(displ_l = disp / 61.0237)
+
+
+#recall that:
+trim: the proportion of outliers from each end to remove before calculating
+na.rm : remove missing values before calculating
+
+#example mean(): 
+#first check arguments of mean
+args(mean) 
+mean(numbers, trim = 0.1, na.rm = TRUE) or simply mean(numbers, 0.1, TRUE)
+
+Example: gold_medals, a numeric vector of the number of gold medals won by each country in the 2016 Summer Olympics, is provided.
+For convenience, the arguments of median() and rank() are displayed using args(). 
+Setting rank()'s na.last argument to "keep" means "keep the rank of NA values as NA".
+Best practice for calling functions is to include them in the order shown by args(), and to only name rare arguments.
+# Note the arguments to rank()
+args(rank)
+
+#The final line calculates each country's ranking by number of gold medals. It uses negative gold_medals so that the country with 
+the most medals will have 1st place: the largest positive value in gold_medals is the smallest ("most negative") value in -gold_medals.
+Rewrite the call to rank(), following best practices.
+
+# Rewrite this function call, following best practices
+rank(-gold_medals, na.last = "keep",ties.method = "min")
+
+
+#basic function SYNTAX
+my_function <- function(arg1, arg2) {
+  #function body
+}
+
+#call your function:
+my_function(arg1 = , arg2 = )
+
+#Example: a function that tosses a coin
+# Paste your script into the function body
+toss_coin <- function() {
+  coin_sides <- c("head", "tail")
+  sample(coin_sides, 1)
+}
+
+#Update the definition of toss_coin() to accept a single argument, n_flips. The function should sample coin_sides n_flips times 
+with replacement. 
+
+toss_coin <- function(n_flips) {
+  coin_sides <- c("head", "tail")
+  sample(coin_sides, n_flips, replace=TRUE)
+}
+
+# Generate 10 coin tosses
+toss_coin(10)
+
+
+#Sampling with weights:
+To solve this exercise, you need to know how to specify sampling weights to sample(). Set the prob argument to a numeric vector 
+with the same length as x. Each value of prob is the probability of sampling the corresponding element of x, so their values 
+add up to one. In the following example, each sample has a 20% chance of "bat", a 30% chance of "cat" and a 50% chance of "rat".
+
+sample(c("bat", "cat", "rat"), 10, replace = TRUE, prob = c(0.2, 0.3, 0.5))
+
+
+## WRAP UP FUNCTION
+
+#you can convert any function to be used with 'pipe' operator by writing a wrap-up function
+#for example lm() function has the 'data' argument after formula (data isnt 1st argument), so it cannot be used with pipe operator (%>%)
+#lets convert lm() by writing a wrap-up function that uses lm()
+
+run_linear_regression <- function(data, formula) {
+  lm(formula, data)
+}
+
+cats %>%
+  run_linear_regression(Hwt ~ Bet + Sex)
+  
+
+#Example:
+#run generalized linear model (glm) on count data by setting family argument to 'poisson'
+#put regular glm() function into a wrap-up function and use pipe operator:
+
+run_poisson_regression <- function(data, formula) {
+  glm(formula, data, family = poisson)
+}
+
+# Re-run the Poisson regression, using your function
+model <- snake_river_visits %>%
+  run_poisson_regression(n_visits ~ gender + income + travel)
+
+# Run this to see the predictions
+snake_river_explanatory %>%
+  mutate(predicted_n_visits = predict(model, ., type = "response"))%>%
+  arrange(desc(predicted_n_visits))
+
+
+##magrittr package's pipeable operator replacements:
+
+#x * y has functional alternative
+x %>% multiply_by(y)
+
+#x ^ y:
+x %>% raise_to_power(y)
+
+#x[y]
+x %>% extract(y)
+
+#When pipe needs more than one variable we provide the second variable as input in the next step: f(x, y) can be rewritten as x %>% f(y)
+x_times_y <- function(x,y) {x*y}
+#x_times_y(2,3) becomes:
+2 %>%
+  x_times_y(3)
+
+#Of course, there are a lot of functions that don't just take one argument, but multiple. This is the case here: 
+#you see that the function takes two arguments, x and y. Similar to what you have seen in the first example, you can rewrite 
+#the function by following the structure argument1 %>% function(argument2), where argument1 is the magrittr placeholder and 
+#argument2 the function call. [source: https://www.datacamp.com/community/tutorials/pipe-r-tutorial]
+
+
+## DEFAULT ARGUMENTS OF FUNCTIONS
+
+#NULL defaults
+#- used for complex arguments
+# - the function does some special handling of this argument, read documentations of the function 
+
+#EX: 
+args(set.seed)
+function(seed, kind = NULL, normal.kind = NULL) 
+#here NULL arguments mean R should continue to use the same random number generation argument
+
+#EX: another example is setting a nonessential string argument to NULL in case user does not want to assign it
+cut(x, n, labels = NULL)
+
+#CATEGORICAL DEFAULTS
+#- two step to define default
+# 1- first step: pass a character vector in the signature
+# 2- call match.arg() in the body
+
+#EX:
+args(prop.test)
+funcion(x, n, p=NULL, alternative = c("two.sided", "less", "greater"), conf.level = 0.95, correct = TRUE)
+#this function has numeric, logical, NULL and categoric defaults (alternative)
+#inside the body of prop.test function there is a line such that:
+alternative <- match.arg(alternative)
+#if user does not specify alternative argument, its default value is the first option in vector: "two-sided"
+
+#EX: rank function uses categorical defaults for ties.method argument:
+> rank
+function (x, na.last = TRUE, ties.method = c("average", "first", 
+    "last", "random", "max", "min")) 
+{
+    nas <- is.na(x)
+    nm <- names(x)
+    ties.method <- match.arg(ties.method)
+    if (is.factor(x)) 
+        x <- as.integer(x)
+    x <- x[!nas]
+    y <- switch(ties.method, average = , min = , max = .Internal(rank(x, 
+        length(x), ties.method)), first = sort.list(sort.list(x)), 
+        last = sort.list(rev.default(sort.list(x, decreasing = TRUE))), 
+        random = sort.list(order(x, stats::runif(sum(!nas)))))
+    if (!is.na(na.last) && any(nas)) {
+        yy <- NA
+        NAkeep <- (na.last == "keep")
+        if (NAkeep || na.last) {
+            yy[!nas] <- y
+            if (!NAkeep) 
+                yy[nas] <- (length(y) + 1L):length(yy)
+        }
+        else {
+            len <- sum(nas)
+            yy[!nas] <- y + len
+            yy[nas] <- seq_len(len)
+        }
+        y <- yy
+        names(y) <- nm
+    }
+    else names(y) <- nm[!nas]
+    y
+}
+<bytecode: 0x5596ccde7da0>
+<environment: namespace:base>
+
+
+
+## Passing arguments between functions
+
+#use the ellipses: ...
+#Benefits:- less typing
+          - no need to match signatures
+#Drawbacks:- you need to trust the inner function
+           - the interface is not as obvious to users
+#Using ... doesn't change how people use your function; it just means the function is more flexible. 
+#Whether flexible means better (or not) is up to you to decide.
+
+#Example: Calculating the geometric mean:
+x %>%
+  log() %>%
+  mean() %>%
+  exp()
+
+#wrap this into a function, also handle missing values:
+calc_geomean <- function(x, na.rm = FALSE) {
+  x %>%
+    log() %>%
+    mean(na.rm = na.rm) %>%
+    exp()
+}
+
+#the ellipsis, or "..." argument allows us to simplify your code by passing arguments of calc_geomean to mean function inside the body
+calc_geomean <- function(x, ...) {
+  x %>%
+    log() %>%
+    mean(...) %>%
+    exp()
+}
+
+
+## Checking arguments
+
+#lets modify our function such that it gives an error if a numeric argument is assigned to a string
+#add input checks at the start of the function body
+
+calc_geomean <- function(x, na.rm = FALSE) {
+  if(!is.numeric(x)) {
+    stop("x is not of class 'numeric'; it has class' ", class(x), ";.")
+  }
+
+  x %>%
+    log() %>%
+    mean(na.rm = na.rm) %>%
+    exp()
+}
+
+
+# Assertive makes errors easy
+# its a bit tedious to write error messages but R has many packages to write assertations; a common one is assert package
+library(assert)
+
+assert_is_numeric() #check for a numeric input
+assert_is_character()
+is_data.frame()
+...
+is_two_sided_formula()
+is_tskernel() #check if input is a time series kernel
+
+#Example:
+calc_geomean <- function(x, na.rm = FALSE) {
+  assert_is_numeric(x)
+  assert_all_are_positive(x)
+
+  x %>%
+    log() %>%
+    mean(na.rm = na.rm) %>%
+    exp()
+}
+
+#Example:
+#If any values of x are non-positive (ignoring NAs) then throw an error.
+calc_harmonic_mean <- function(x, na.rm = FALSE) {
+  assert_is_numeric(x)
+  # Check if any values of x are non-positive
+  if(any(is_non_positive(x), na.rm = TRUE)) {           #this code checks if any of x is non positive
+    # Throw an error
+    stop("x contains non-positive values, so the harmonic mean makes no sense.")
+  }
+  x %>%
+    get_reciprocal() %>%
+    mean(na.rm = na.rm) %>%
+    get_reciprocal()
+}
+
+
+#an alternative method to giving error to wrong kind of argument is to fix it:
+we can use use_first function for example to take only first argument of a vector when vector is given as input to a numeric argument
+use_first(c(1, 2, 3))
+Warning message:
+Only the first value of c(1, 2, 3) (=1) will be used.
+
+#coerce_to function can be used to convert an input:
+coerce_to(c(1, 2, 3), "character")
+"1" "2" "3"
+coerce_to(c(1,2,3), "logical") #uses first argument 1, converts it to logical
+TRUE
+
+#Example:
+# Use the first value of na.rm, and coerce to logical
+  na.rm <- coerce_to(use_first(na.rm), "logical")
+
+
+## RETURNING VALUES FROM FUNCTIONS
+
+#when we dont use return command the function returs the last calculated value,
+#if we want a fundtion to return a value before it reaches end, we need to use return command:
+#we also return outcome early when the input is an edge case
+
+simple_sum <- function(x) {
+  if(anyNA(x)) {
+    return(NA)
+  }
+  
+  total <- 0
+  for( i in x) {
+    total <- i
+  }
+  total   #or we could write return(total)
+}
+
+simple_sum(c(0, 2, 5, 4, NA)
+NA
+
+#Example: Leap year function; 
+is_leap_year <- function(year) {
+  # If year is div. by 400 return TRUE
+  if(year%%400==0) {
+    return(TRUE)
+  }
+  # If year is div. by 100 return FALSE
+  if(year%%100==0) {
+    return(FALSE)
+  }  
+  # If year is div. by 4 return TRUE
+  if (year%%4==0){
+    return(TRUE)
+  } else {# Otherwise return FALSE
+    FALSE
+  }
+}
+
+
+#sometimes instead of giving an error by stop commend, we can give a warning by warning command and still return an outcome:
+if(any(is_non_positive(x), na.rm = TRUE)) {           #this code checks if any of x is non positive
+    # give a warning and return not a number
+    warning("x contains non-positive values, so the harmonic mean makes no sense.")
+    return(NaN)
+  }
+  
+  
+#INVISIBLE: we can also hide the outcome from being printed to the console using invisible command
+simple_sum <- function(x) {
+  if(anyNA(x)) {
+    return(NA)
+  }
+  
+  total <- 0
+  for( i in x) {
+    total <- i
+  }
+  invisible(total)   #in this case total is calculated but not written in the console
+}
+
+#For example all ggplots and some base R functions have invisible return value
+
+
+## RETURNING MULTIPLE VALUES
+
+#we use list() when we want to return multiple values from a function as a list
+#or you cana use zeallot package's multiple assignment operator:
+
+library(zeallot)
+c(x, y, z) %<-% my_function()
+
+#Returning metadata
+#another method to return multiple values is by attributes
+#Sometimes you want the return multiple things from a function, but you want the result to have a particular class 
+#(for example, a data frame or a numeric vector), so returning a list isn't appropriate. This is common when you have 
+#a result plus metadata about the result. (Metadata is "data about the data". For example, it could be the file a dataset 
+#was loaded from, or the username of the person who created the variable, or the number of iterations for an algorithm to converge.)
+
+#In that case, you can store the metadata in attributes. Recall the syntax for assigning attributes is as follows.
+attr(object, "attribute_name") <- attribute_value
+
+### if you need the result to have a particular type, add additional return values as attributes
+
+month_no <- setNames(1:12, month.abb)
+month_no
+Jan Feb Mar ....
+  1   2   3 ....
+  
+attributes(month_no)
+$names
+"jan" "Feb" "Mar" ...
+
+#attr() function gets specific attributes
+attr(month_no, "names")
+"jan" "Feb" "Mar" ...
+
+#attr can be used to set values of attributes:
+attr(month_no, "names") <- month.name
+month_no
+January February March ...
+      1        2     3 ...
+      
+#attributes of a data frame are names, row.names and class (which is "tbl_df", "tbl", or "data.frame"
+
+#using group_by() function on a data frame adds a new attribute called "groups"
+
+#EXERCISE: Update pipeable_plot() so the result has an attribute named "formula" with the value of formula.
+pipeable_plot <- function(data, formula) {
+  plot(formula, data)
+  # Add a "formula" attribute to data
+  attr(data, "formula") <- formula
+  invisible(data)
+}
+
+# From previous exercise
+plt_dist_vs_speed <- cars %>% 
+  pipeable_plot(dist ~ speed)
+
+# Examine the structure of the result
+str(plt_dist_vs_speed)
+'data.frame':	50 obs. of  2 variables:
+ $ speed: num  4 4 7 7 8 9 10 10 10 11 ...
+ $ dist : num  2 10 4 22 16 10 18 26 34 17 ...
+ - attr(*, "formula")=Class 'formula'  language dist ~ speed                  ---> formula attribute is shown here
+  .. ..- attr(*, ".Environment")=<environment: 0x559d972d1168>
+
+#EXERCISE: Returning many things
+#Functions can only return one value. If you want to return multiple things, then you can store them all in a list.
+
+#If users want to have the list items as separate variables, they can assign each list element to its own variable using zeallot's 
+#multi-assignment operator, %<-%.
+
+#glance(), tidy(), and augment() each take the model object as their only argument.
+
+#The Poisson regression model of Snake River visits is available as model. broom and zeallot are loaded.
+#write a function that returns glance, tidy and augment results of a model:
+# Wrap this code into a function, groom_model
+
+groom_model <- function(model){
+  list(
+    model = glance(model),
+    coefficients = tidy(model),
+    observations = augment(model)
+  )
+}
+
+
+# Call groom_model on model, assigning to 3 variables
+c(mdl, cff, obs) %<-% groom_model(model)
+
+# See these individual variables
+mdl; cff; obs
+
+
+#FUNCTIONS and ENVIRONMENTS
+
+#When we call a function R gives it an environment to store its variables
+# a function's variable is not to be found in the gloval environment, its in a child environment instead
+#when R runs a function's code it first looks for variables in its special environment and if it cannot find variables there,
+#then R looks in the global
+
+#Example:
+x_times_y <- function(x) {
+  x * y
+}
+
+x_times_y(10)
+Error ... : object 'y' not found
+
+x_times_y <- function(x) {
+  x * y
+}
+y <- 4
+
+x_times_y(10)  #in this calculation of function x_times_y R gets y value from parent environment
+40
+
+x_times_y <- function(x) {
+  y <- 3
+  x * y
+}
+
+print(y)
+Error in print(y): object 'y' not found   
+#the function's variable y cannot be found in the global environment because its in the child envionment
+
+#if you define a variable both inside and outside a function R uses variable inside the function to calculate its outcome
+
+x_times_y <- function(x) {
+  y <- 2
+  x * y
+}
+y <- 1
+
+x_times_y(10)
+20              #here R used y variable in the function's environment
+
+print(y)
+1               #here R uses y in the global environment
+
