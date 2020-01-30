@@ -7,7 +7,7 @@
 sets %>%
   inner_join(themes, by = c("theme_id" = "id"))
   
-#if joining column has the same name we can just write its name:
+#if joining column has the same name we can just write its name, without putting in an array:
 sets %>%
   inner_join(inventories, by = "set_num")
 
@@ -283,7 +283,26 @@ version_1_inventories <- inventories %>%
 
 # Use anti_join() to find which set is missing a version 1
 sets %>%
-  anti_join(version_1_inventories, by = c("set_num"))
+  anti_join(version_1_inventories, by = "set_num")	    #here notice that by with one variable name works, no need for c("set_num")
+
+
+## THE bind_rows verb
+
+# IS USED TO STACK DATA ON TOP OF EACH OTHER!!! COLUMN-VISE JOIN
+#resulting data will have columns from each dataset, missing values included for columns that doesn't exist in each
+
+questions %>%
+  bind_rows(answers)
+
+#Example: if you are combining datasets over the years it is useful to add year columns to each before binding rows to keep track
+data_2019 <- data_2019 %>%
+  mutate(year = "2019")
+
+data_2018 <- data_2018 %>%
+  mutate(year = "2018")
+
+all_data <- bind_rows(data_2019, data_2018) 
+#in this case all_data table has a year column/variable that has relevant year information for each data point
 
 
 #EXERCISE:
@@ -336,3 +355,41 @@ ggplot(colors_joined, aes(name , difference , fill = name)) +
   coord_flip() +
   scale_fill_manual(values = color_palette, guide = FALSE) +
   labs(y = "Difference: Batman - Star Wars")
+
+#Exercise:
+#Stack-overflow data
+tagged_answers <- question_answer_counts %>%
+    inner_join(question_tags, by = c("id" = "question_id")) %>%
+    inner_join(tags, by = c("tag_id" = "id"))
+
+#Some of the important variables from this table include: n, the number of answers for each question, and tag_name, the name of each tag
+#associated with each question.
+#Let's use some of our favorite dplyr verbs to find out how many answers each question gets on average.
+
+tagged_answers %>%
+	# Aggregate by tag_name
+  group_by(tag_name) %>%  
+	# Summarize questions and average_answers
+    summarize(questions = n(),					#recall that n() function counts number of observations in groups
+              average_answers = mean(n)) %>%			#here n is just a column name for answer counts
+	# Sort the questions in descending order
+  arrange(desc(questions)) 
+ 
+ 
+#Exercise: bind_rows, aggregating by type and counting:
+# Combine the two tables into posts_with_tags
+posts_with_tags <- bind_rows(questions_with_tags %>% mutate(type = "question"),
+                              answers_with_tags %>% mutate(type = "answer"))
+
+
+# Add a year column, then aggregate by type, year, and tag_name
+posts_with_tags %>%
+  mutate(year = year(creation_date)) %>%
+  group_by(type, year, tag_name) %>%
+  count()							#note here that count() need not to get an input, it counts all rows within groups
+
+# we could do the count without grouping:
+by_type_year_tag <- posts_with_tags %>%
+  mutate(year = year(creation_date)) %>%
+  count(type, year, tag_name)
+
