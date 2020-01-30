@@ -1,0 +1,338 @@
+### Joining Data with dplyr
+
+
+# inner_join()
+
+#following code joins sets dataset with themes table by looking at column theme_id in first dataset and matches it with id column in the 2nd
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"))
+  
+#if joining column has the same name we can just write its name:
+sets %>%
+  inner_join(inventories, by = "set_num")
+
+#if two datasets include variables with same name R names them as name.x and name.y, but we can customize names using suffix()
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme"))
+
+#in above cases variables with same name in two datasets will be renamed as varname_set for first dataset and varname_theme for second dataset
+
+
+## Joining with a one-to-many relationship
+
+#we use the same command as above, and it still works for one-to-many matches:
+sets %>%
+  inner_join(inventories, by = "set_num")
+
+#this join command creates multiples of observations from first dataset 'sets' because they match many observations in 'inventories' data
+
+#when joining tables we need to pay attention to number of observations to make sure everything is alright
+
+#if we want to join only the first match we can filter the result:
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  filter(version == 1)
+
+
+## Joining in either direction
+#An inner_join works the same way with either table in either position. The table that is specified first is arbitrary, 
+#since you will end up with the same information in the resulting table either way.
+
+#above join is same as below. Note that the columns will appear in a different order depending on which table comes first.:
+inventories %>%
+  inner_join(sets, by = "set_num") %>%
+  filter(version == 1)
+
+
+## Joining three or more tables:
+
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  inner_join(themes, by = c("theme_id", "id"), suffix = c("_set", "_theme"))
+
+
+# EXERCISE: join 4 tables
+#sets with inventories using 'set_num', inventories with inventory_parts using 'id,inventory_id', and inventory_parts with colors using 'color_id, id'
+sets %>%
+	# Add inventories using an inner join 
+	inner_join(inventories, by = c("set_num")) %>%
+	# Add inventory_parts using an inner join 
+	inner_join(inventory_parts, by = c("id" = "inventory_id"))
+  # Add an inner join for the colors table
+  inner_join(colors, by = c("color_id" = "id"), suffix = c("_set", "_color"))
+  # Count the name_color column and sort the results so the most prominent colors appear first, and sort:
+  count(name_color, sort=TRUE)
+
+
+
+## LEFT_JOIN: left_join()
+
+#when we want to join not just based on one column but combunation of columns we write by command with two variables separated by comma
+#NOTICE THAT BY ARGUMENT HAS TWO VARIABLES SEPARATED BY COMMA INSTEAD OF EQUAL SIGN, THAT IS MATCHING BASED ON TWO COLUMNS
+batmobile %>%
+  inner_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+
+# THE INNER JOINED DATASET CONTAINS ONLY OBSERVATIONS THAT HAVE MATCH IN EACH DATASET
+
+# KEEPING ALL OBSERVATIONS FROM FIRST DATASET WHEN THEIR MATCH IS MISSING IN THE SECOND DATASET
+# if we want to keep observations from the first dataset which are MISSING their match in the second data, we use left_join()
+batmobile %>%
+  left_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+
+
+#Exercise:
+# Aggregate Millennium Falcon for the total quantity in each part
+millennium_falcon_colors <- millennium_falcon %>%
+  group_by(color_id) %>%
+  summarize(total_quantity = sum(quantity))
+
+# Aggregate Star Destroyer for the total quantity in each part
+star_destroyer_colors <- star_destroyer %>%
+  group_by(color_id) %>%
+  summarize(total_quantity = sum(quantity))
+
+# Left join the Millennium Falcon colors to the Star Destroyer colors
+millennium_falcon_colors %>%
+  left_join(star_destroyer_colors, by = c("color_id"), suffix = c("_falcon", "_star_destroyer"))
+
+#exercise2:
+inventory_version_1 <- inventories %>%
+  filter(version == 1)
+
+# Join versions to sets
+sets %>%
+  left_join(inventory_version_1, by = c("set_num")) %>%
+  # Filter for where version is na
+  filter(is.na(version))
+
+## another way to find observations that does not match is anti_join()
+
+
+## RIGHT_JOIN: right_join()
+# THE INNER JOINED DATASET CONTAINS ONLY OBSERVATIONS THAT HAVE MATCH IN EACH DATASET
+
+# RIGHT JOIN - KEEPING ALL OBSERVATIONS FROM SECOND DATASET WHEN THEIR MATCH IS MISSING IN THE FIRST DATASET
+#right join is like mirror of left join
+# if we want to keep observations from the second dataset which are MISSING their match in the first data, we use rifht_join()
+batmobile %>%
+  right_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+
+
+#Exercise: use right join and check nonmatched observations by looking at NAs
+parts %>%
+	count(part_cat_id) %>%
+	right_join(part_categories, by = c("part_cat_id" = "id")) %>%
+	# Filter for NA
+	filter(is.na(n))      #here n column comes from second dataset, so its missing values are nonmatched ones
+
+#instead of filtering observations with missing (NA) values we can make them 0 using replace_na() from tidyverse package:
+# Use replace_na to replace missing values in the n column; it takes a list argument:
+	replace_na(list(n=0))
+
+#EXAMPLEs: replace_na
+library(dplyr)
+df <- tibble(x = c(1, 2, NA), y = c("a", NA, "b"), z = list(1:5, NULL, 10:20))
+df %>% replace_na(list(x = 0, y = "unknown"))
+df %>% mutate(x = replace_na(x, 0))
+
+set.seed(2)
+x=c(1,2,3,NA)
+df = data.frame(col_1 = sample(x,15,replace = TRUE),col_2=sample(x,15,replace = TRUE))
+df %>% mutate_if(is.numeric,list(~replace_na(.,0)))
+df %>% mutate_all(list(~replace_na(.,0)))
+
+
+## Joining tables themselves
+
+#when a table has a relationship to itself: observations are related via id variables
+#Example: themes data has lego themes with their parents
+themes
+   id  name    parent_id
+<dbl>  <chr>        <dbl>
+1   1  Technic         NA
+2   2  Arctic Technic   1
+3   3  Competition      1
+4   4  Expert Builder   1
+5   5  Model            1
+6   6  Airport          5
+7   7  Construction     5
+...
+
+
+# Child-parent table: inner_join
+
+themes %>% 
+  inner_join(themes, by = c("parent_id" = "id"), suffix = c("_child", "_parent"))
+
+   id  name_child   parent_id  name_parent  parent_id_parent
+<dbl>  <chr>            <dbl>  <chr>                   <dbl>
+1   2  Arctic Technic       1  Technic                    NA
+2   3  Competition          1  Technic                    NA
+3   4  Expert Builder       1  Technic                    NA
+4   5  Model                1  Technic                    NA
+5   6  Airport              5  Model                       1
+6   7  Construction         5  Model                       1
+...
+
+#notice that 1-Technic disappeared because it does not have a matching parent (NA)
+
+#Parent-child table: inner join with matching id order reversed:
+
+#Inner join themes to their own children, resulting in the suffixes "_parent" and "_child", respectively.
+#Filter this table to find the children of the "Harry Potter" theme.
+
+themes %>% 
+	# Inner join the themes table
+	inner_join(themes, by = c("id" = "parent_id"), suffix = c("_parent", "_child")) %>%
+	# Filter for the "Harry Potter" parent name 
+	filter(name_parent == "Harry Potter")
+
+# A tibble: 6 x 5
+     id name_parent  parent_id id_child name_child          
+  <dbl> <chr>            <dbl>    <dbl> <chr>               
+1   246 Harry Potter        NA      247 Chamber of Secrets  
+2   246 Harry Potter        NA      248 Goblet of Fire      
+3   246 Harry Potter        NA      249 Order of the Phoenix
+4   246 Harry Potter        NA      250 Prisoner of Azkaban 
+5   246 Harry Potter        NA      251 Sorcerer's Stone    
+6   246 Harry Potter        NA      667 Fantastic Beasts
+
+
+#Exercise: Use another inner join to combine themes again with itself.
+#Be sure to use the suffixes "_parent" and "_grandchild" so the columns in the resulting table are clear.
+#Update the by argument to specify the correct columns to join on. Notice that second match should use id created in first match!
+# Join themes to itself again to find the grandchild relationships
+themes %>% 
+  inner_join(themes, by = c("id" = "parent_id"), suffix = c("_parent", "_child")) %>%
+  inner_join(themes, by = c("id_child" = "parent_id"), suffix = c("_parent", "_grandchild"))
+
+#Exercise2:
+#Left join the themes table to its own children, with the suffixes _parent and _child respectively.
+#Filter the result of the join to find themes that have no children.
+themes %>% 
+  # Left join the themes table to its own children
+  left_join(themes, by = c("id" = "parent_id"), suffix = c("_parent", "_child")) %>%
+  # Filter for themes that have no child themes
+  filter(is.na(name_child))
+
+
+
+## THE FULL JOIN
+
+#full_join is used keep all the observations in both tables when joining them 
+batmobile %>%
+  full_join(batwing, by = c("part_num", "color_id"), suffix = c("_batmobile", "_batwing"))
+
+#we notice the resulting table has more rows than any of the two tables joined together
+
+#again replace_na function can be used to make missing values 0:
+  replace_na(list(quantity_batmobile = 0, quantity_batwing = 0))
+  
+
+#Exercise:
+# Count the part number and color id, weight by quantity
+batman %>%
+  count(part_num,color_id, wt=quantity)
+star_wars %>%
+  count(part_num,color_id, wt=quantity)
+
+#Now that you've got separate tables for the pieces in the batman and star_wars themes, you'll want to be able to combine them 
+#to see any similarities or differences between the two themes. The aggregating from the last exercise has been saved as 
+#batman_parts and star_wars_parts, and is preloaded for you.
+
+parts_joined <- batman_parts %>%
+  # Combine the star_wars_parts table 
+  full_join(star_wars_parts, by = c("part_num", "color_id"), suffix = c("_batman", "_star_wars")) %>%
+  # Replace NAs with 0s in the n_batman and n_star_wars columns 
+  replace_na(list(n_batman = 0, n_star_wars = 0))
+
+#now lets join colors and parts tables to above table using inner join functions:
+parts_joined %>%
+  # Sort the number of star wars pieces in descending order 
+  arrange(desc(n_star_wars)) %>%
+  # Join the colors table to the parts_joined table
+  inner_join(colors, by = c("color_id" = "id")) %>%
+  # Join the parts table to the previous join 
+  inner_join(parts, by = c("part_num"), suffix = c("_color", "_part"))
+
+
+
+## semi- and anti- join verbs
+
+#filtering join: keeps or removes observations from the first table, does not add new variables
+
+#semi_join matches observations between two tables and keeps the observations in first table that matched the second
+#it answers what observations in first data are also in second data
+#in another words semi_join filters the first table for observations that match the second
+
+# Filter the batwing set for parts with same color that are also in the batmobile set
+batwing %>%
+  semi_join(batmobile, by = c("part_num", "color_id"))
+
+#anti_join answers what observations in first data are NOT in second data
+#anti_join filters the first table for observations that don't match the second
+
+# Filter the batwing set for parts that aren't in the batmobile set without considering color
+batwing %>%
+  anti_join(batmobile, by = c("part_num"))
+
+#Exercise:
+# Use filter() to extract version 1 
+version_1_inventories <- inventories %>%
+  filter(version == 1)
+
+# Use anti_join() to find which set is missing a version 1
+sets %>%
+  anti_join(version_1_inventories, by = c("set_num"))
+
+
+#EXERCISE:
+#Aggregating sets to look at their differences
+#To compare two individual sets, and the kinds of LEGO pieces that comprise them, we'll need to aggregate the data into separate themes. 
+
+inventory_parts_themes <- inventories %>%
+  inner_join(inventory_parts, by = c("id" = "inventory_id")) %>%
+  arrange(desc(quantity)) %>%
+  select(-id, -version) %>%
+  inner_join(sets, by = "set_num") %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme"))
+
+#Filter and aggregate the Batmand and Star Wars set data to create batman_colors and star_wars_colors objects; 
+#add a percent column to each object to display the percent of the total.
+batman_colors <- inventory_parts_themes %>%
+  # Filter the inventory_parts_themes table for the Batman theme
+  filter(name_theme == "Batman") %>%
+  group_by(color_id) %>%
+  summarize(total = sum(quantity)) %>%
+  # Add a percent column of the total divided by the sum of the total 
+  mutate(percent = total/sum(total))
+
+# Filter and aggregate the Star Wars set data; add a percent column
+star_wars_colors <- inventory_parts_themes %>%
+  # Filter the inventory_parts_themes table for the Star Wars theme
+  filter(name_theme == "Star Wars") %>%
+  group_by(color_id) %>%
+  summarize(total = sum(quantity)) %>%
+  # Add a percent column of the total divided by the sum of the total 
+  mutate(percent = total/sum(total))
+
+#Join the batman_colors and star_wars_colors tables; be sure to include all observations from both tables.
+colors_joined <- batman_colors %>%
+  # Join the Batman and Star Wars colors
+  full_join(star_wars_colors, by = "color_id", suffix = c("_batman", "_star_wars")) %>%
+  # Replace NAs in the total_batman and total_star_wars columns
+  replace_na(list(total_batman=0, total_star_wars=0)) %>%
+  inner_join(colors, by = c("color_id" = "id")) %>%
+  # Create the difference column for the difference between percent_batman and percent_star_wars, and a total column, which is the sum of total_batman and total_star_wars.
+  mutate(difference = percent_batman - percent_star_wars,
+         total = total_batman + total_star_wars) %>%
+  # Filter for totals greater than 200
+  filter(total >= 200 %>%
+  mutate(name = fct_reorder(name, difference)) 
+
+# Create a bar plot using colors_joined and the name and difference columns
+ggplot(colors_joined, aes(name , difference , fill = name)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values = color_palette, guide = FALSE) +
+  labs(y = "Difference: Batman - Star Wars")
