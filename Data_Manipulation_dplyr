@@ -103,6 +103,7 @@ counties %>%
 ...
 
 
+
 ##Group_by and summarize are used to aggregate data
 
 #summarize is used to summarize variables
@@ -154,6 +155,17 @@ counties_selected %>%
   group_by(region, state) %>%
   summarize(total_pop = sum(population)) %>%
   summarize(average_pop=mean(total_pop), median_pop=median(total_pop))    #in this step we could not use population, because it's not available
+
+
+#n() command for the numbed of observations in the current group:
+
+#This function is implemented specifically for each data source and can only be used from within summarise(), mutate() and filter().
+
+#Example: 
+carriers <- group_by(flights, carrier) %>%
+  summarise(carriers, n()) %>%
+  mutate(carriers, n = n()) %>%
+  filter(carriers, n() < 100)
 
 
 ##top_n is used to find the most extreme observations from each group
