@@ -1,0 +1,25 @@
+--Inner Join
+
+-- Inner join the cities table on the left to the countries table on the right, keeping all of the fields in both tables.
+
+SELECT * 
+FROM cities
+  -- Inner join to countries
+  INNER JOIN countries
+    -- Match on the country codes
+    ON cities.country_code = countries.code;
+    
+-- Select name fields (with alias) and region 
+SELECT cities.name AS city, countries.name AS country, region
+FROM cities
+  INNER JOIN countries
+    ON cities.country_code = countries.code;
+    
+--Instead of writing the full table name, you can use table aliasing as a shortcut. 
+--For tables you also use AS to add the alias immediately after the table name with a space. Check out the aliasing of cities and countries below.
+
+--SELECT c1.name AS city, c2.name AS country
+--FROM cities AS c1
+--INNER JOIN countries AS c2
+--ON c1.country_code = c2.code;
+
