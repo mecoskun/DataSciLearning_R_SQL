@@ -240,3 +240,197 @@ FROM countries AS c
 WHERE year = 2010
 -- Group by region
 GROUP BY region;
+
+
+-- RIGHT JOIN
+-- Right join is similar to left join, but it takes right table as primary source
+
+-- FULL JOIN
+-- full join keeps id and rows from both tables
+
+
+-- EXAMPLE: Begin with a full join with languages on the left and countries on the right. 
+-- Choose records in which countries.name starts with the capital letter 'V' or is NULL.
+SELECT countries.name, code, languages.name AS language
+-- From languages
+FROM languages
+  -- Join to countries
+  FULL JOIN countries
+    -- Match on code
+    USING (code)
+-- Where countries.name starts with V or is null
+WHERE countries.name LIKE 'V%' OR countries.name IS NULL
+-- Order by ascending countries.name
+ORDER BY countries.name;
+
+
+-- CROSS JOIN
+-- creates all possible combinations of each table, like a cross product
+
+
+# Example
+-- Select fields
+SELECT c.name AS country, region, life_expectancy AS life_exp
+-- From countries (alias as c)
+FROM countries AS c
+  -- Join to populations (alias as p)
+  LEFT JOIN populations AS p
+    -- Match on country code
+    ON c.code = p.country_code
+-- Focus on 2010
+WHERE year = 2010
+-- Order by life_exp
+ORDER BY life_exp
+-- Limit to 5 records
+LIMIT 5
+
+
+----- UNION, UNION ALL
+-- these commands stack records on the top of each other! Therefore combining multiple tables into one --> same as rbind in R
+-- union includes all rows from both tables, 
+-- union all includes double of intersecting rows 
+-- intersect gives only intersection (same selected items from both tables)
+-- UNION ALL will extract all records from two tables, while INTERSECT will only return records that both tables have in common.
+-- except gives A - B, excepting the intersection
+-- IMPORTANT: UNION should be used to combine columns of the same data type across data tables!
+
+--Example--
+-- Select fields from 2010 table
+SELECT *
+  -- From 2010 table
+  FROM economies2010
+	-- Set theory clause
+	UNION
+-- Select fields from 2015 table
+SELECT *
+  -- From 2015 table
+  FROM economies2015
+-- Order by code and year
+ORDER BY code, year;
+
+-- economies2010:
+code	year	income_group	gross_savings
+AFG	2010	Low income	37.133
+AGO	2010	Upper middle income	23.534
+
+-- economies2015:
+code	year	income_group	gross_savings
+AFG	2015	Low income	21.466
+AGO	2015	Upper middle income	-0.425
+
+-- above UNION result:
+code	year	income_group	gross_savings
+AFG	2010	Low income	37.133
+AFG	2015	Low income	21.466
+AGO	2010	Upper middle income	23.534
+AGO	2015	Upper middle income	-0.425
+
+
+-- UNION can also be used to determine all occurrences of a field across multiple tables. Try out this exercise with no starter code.
+-- Determine all (non-duplicated) country codes in either the cities or the currencies table. The result should be a table with only one field called country_code.
+
+-- Select field
+SELECT country_code
+  -- From cities
+  FROM cities
+	-- Set theory clause
+	UNION
+-- Select field
+SELECT code
+  -- From currencies
+  FROM currencies
+-- Order by country_code
+ORDER BY country_code;
+
+
+
+-- Use INTERSECT to determine the records in common for country code and year for the economies and populations tables.
+
+-- Example:
+-- Select fields
+SELECT code, year
+  -- From economies
+  FROM economies
+	-- Set theory clause
+	INTERSECT
+-- Select fields
+SELECT country_code, year
+  -- From populations
+  FROM populations
+-- Order by code and year
+ORDER BY code, year;
+
+
+-- Example: As you think about major world cities and their corresponding country, you may ask which countries also have a city with the same name as their country name?
+-- Select fields
+SELECT name
+  -- From countries
+  FROM countries
+	-- Set theory clause
+	INTERSECT
+-- Select fields
+SELECT name
+  -- From cities
+  FROM cities;
+  
+  
+  -- Except
+-- Example: Get the names of cities in cities which are not noted as capital cities in countries as a single field result.
+-- Select field
+SELECT name
+  -- From cities
+  FROM cities
+	-- Set theory clause
+	EXCEPT
+-- Select field
+SELECT capital
+  -- From countries
+  FROM countries
+-- Order by result
+ORDER BY name;
+
+
+-- SEMI-JOINS and ANTI-JOINS (SUBQUERIES)
+-- these joins are similar to where clause using a second table
+
+-- below is an example of semi-join, we could change the where condition to NOT IN to make this example of anti-join:
+
+SELECT president, country, continent
+FROM presidents
+WHERE country IN
+    (SELECT name
+     FROM states
+     WHERE indep_year < 1800)
+     
+
+
+-- Example: Your task here will be to incorporate two of UNION/UNION ALL/INTERSECT/EXCEPT to solve a challenge involving three tables.
+-- Identify the country codes that are included in either economies or currencies but not in populations.
+-- Use that result to determine the names of cities in the countries that match the specification in the previous instruction.
+
+-- Select the city name
+SELECT name
+  -- Alias the table where city name resides
+  FROM cities AS c1
+  -- Choose only records matching the result of multiple set theory clauses
+  WHERE country_code IN
+(
+    -- Select appropriate field from economies AS e
+    SELECT e.code
+    FROM economies AS e
+    -- Get all additional (unique) values of the field from currencies AS c2  
+    UNION
+    SELECT c2.code
+    FROM currencies AS c2
+    -- Exclude those appearing in populations AS p
+    EXCEPT
+    SELECT p.country_code
+    FROM populations AS p
+);
+
+
+
+
+
+
+
