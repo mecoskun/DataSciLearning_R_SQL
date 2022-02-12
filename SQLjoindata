@@ -430,7 +430,151 @@ SELECT name
 
 
 
+-- SUBQUERY -- 
+-- SUBQUERIES inside WHERE and SELECT clauses
+
+--  some queries can be written using either a join or a subquery.
+-- The code given in the first query selects the top nine countries in terms of number of cities appearing in the cities table. 
+
+SELECT countries.name AS country, COUNT(*) AS cities_num
+  FROM cities
+    INNER JOIN countries
+    ON countries.code = cities.country_code
+GROUP BY country
+ORDER BY cities_num DESC, country
+LIMIT 9;
+
+-- the below query to get the same result as the provided code:
+SELECT countries.name AS country,
+  -- Subquery
+  (SELECT count(*)
+   FROM cities
+   WHERE countries.code = cities.country_code) AS cities_num
+FROM countries
+ORDER BY cities_num DESC, name
+LIMIT 9;
+
+
+-- Subquery inside from
+
+-- Select fields
+SELECT local_name, lang_num
+  -- From countries
+  FROM countries,
+  	-- Subquery (alias as subquery)
+  	(SELECT code, COUNT(*) AS lang_num
+  	 FROM languages
+  	 GROUP BY code) AS subquery
+  -- Where codes match
+  WHERE countries.code = subquery.code
+-- Order by descending number of languages
+ORDER BY lang_num DESC;
 
 
 
+SELECT MAX(inflation_rate) AS max_inf
+        FROM (
+             SELECT name, continent, inflation_rate
+             FROM countries
+             INNER JOIN economies
+             ON countries.code = economies.code
+             WHERE year = 2015) AS subquery
+      -- Group by continent
+        GROUP BY continent
 
+Result:
+max_inf
+21.858
+39.403
+121.738
+7.524
+48.684
+9.784
+
+
+- Now expand the query with some outer queries:
+-- Select fields
+SELECT name, continent, inflation_rate
+  -- From countries
+  FROM countries
+	-- Join to economies
+	INNER JOIN economies
+	-- Match on code
+	ON countries.code = economies.code
+  -- Where year is 2015
+  WHERE year = 2015
+    -- And inflation rate in subquery (alias as subquery)
+    AND inflation_rate IN (
+        SELECT MAX(inflation_rate) AS max_inf
+        FROM (
+             SELECT name, continent, inflation_rate
+             FROM countries
+             INNER JOIN economies
+             ON countries.code = economies.code
+             WHERE year = 2015) AS subquery
+      -- Group by continent
+        GROUP BY continent);
+	
+Result:
+name	continent	inflation_rate
+Haiti	North America	7.524
+Malawi	Africa		21.858
+Nauru	Oceania		9.784
+Ukraine	Europe		48.684
+VenezuelaSouth America	121.738
+Yemen	Asia		39.403
+
+
+-- Exercise:
+--In this exercise, you'll need to get the country names and other 2015 data in the economies table and 
+-- the countries table for Central American countries with an official language.
+-- Match on code in the two tables AND use a subquery inside of ON to choose the appropriate languages records.
+
+-- Select fields
+SELECT DISTINCT name, total_investment, imports
+  -- From table (with alias)
+  FROM countries AS c
+    -- Join with table (with alias)
+    LEFT JOIN economies AS e
+      -- Match on code
+      ON (c.code = e.code
+      -- and code in Subquery
+        AND e.code IN (
+          SELECT l.code
+          FROM languages AS l
+          WHERE official = 'true'
+        ) )
+  -- Where region and year are correct
+  WHERE region = 'Central America' AND year = 2015
+-- Order by field
+ORDER BY name;
+
+
+-- Final challenge
+-- You are now tasked with determining the top 10 capital cities in Europe and the Americas in terms of 
+--a calculated percentage using city_proper_pop and metroarea_pop in cities.
+
+Select the city name, country code, city proper population, and metro area population.
+Calculate the percentage of metro area population composed of city proper population for each city in cities, aliased as city_perc.
+Focus only on capital cities in Europe and the Americas in a subquery.
+Make sure to exclude records with missing data on metro area population.
+Order the result by city_perc descending.
+
+-- Select fields
+SELECT name, country_code, city_proper_pop, metroarea_pop,  
+      -- Calculate city_perc
+      city_proper_pop / metroarea_pop * 100 AS city_perc
+  -- From appropriate table
+  FROM cities
+  -- Where 
+  WHERE name IN
+    -- Subquery
+    (SELECT capital
+     FROM countries
+     WHERE (continent = 'Europe'
+        OR continent LIKE '%America%'))
+       AND metroarea_pop IS NOT NULL
+-- Order appropriately
+ORDER BY city_perc DESC
+-- Limit amount
+LIMIT 10;
